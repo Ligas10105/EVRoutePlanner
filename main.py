@@ -1,10 +1,9 @@
-from itertools import permutations
-from src.charging_station import ChargingStation
 from src.graph import Graph
 from src.vehicle import ElectricVehicle
-from src.objective_function import objective_function
+from src.charging_station import ChargingStation
+from src.ant_colony import AntColonyOptimization
 
-
+# Definicja grafu
 graph = Graph()
 nodes = ["A", "B", "C", "D", "E", "F"]
 distances = {
@@ -15,16 +14,17 @@ distances = {
     ("E", "F"): 100,
 }
 
+# Dodawanie krawędzi do grafu
 for (start, end), distance in distances.items():
     graph.add_edge(start, end, distance, difficulty=1.0)
     graph.add_edge(end, start, distance, difficulty=1.0)
 
 # Pojazd elektryczny
 vehicle = ElectricVehicle(
-    max_range=300,
-    energy_per_km=0.2,
-    battery_capacity=60,
-    initial_charge=60
+    max_range=300,          # Zasięg w kilometrach
+    energy_per_km=0.2,      # Zużycie energii na kilometr (kWh)
+    battery_capacity=60,    # Pojemność baterii (kWh)
+    initial_charge=60       # Początkowy poziom baterii (kWh)
 )
 
 # Stacje ładowania
@@ -35,25 +35,22 @@ stations = {
     "E": ChargingStation("E", 40, 50, price_per_kwh=0.7, queue_time=0.2, max_power=45),
 }
 
-# Generowanie tras
-points = ["B", "C", "D", "E"]
-routes = []
-for perm in permutations(points, len(points)):
-    route = ["A"] + list(perm) + ["F"]
-    routes.append(route)
+# Parametry algorytmu mrówkowego
+aco = AntColonyOptimization(
+    graph=graph,
+    vehicle=vehicle,
+    stations=stations,
+    num_ants=10,            # Liczba mrówek
+    num_iterations=100,     # Liczba iteracji
+    evaporation_rate=0.5,   # Szybkość ewaporacji feromonów
+    alpha=1,                # Waga feromonów
+    beta=2,                 # Waga heurystyki
+    penalty=1000            # Kara za niedopuszczalne trasy
+)
 
-# Walidacja tras
-valid_routes = []
-for route in routes:
-    if all(
-        graph.edges.get(route[i], {}).get(route[i + 1]) is not None
-        for i in range(len(route) - 1)
-    ):
-        valid_routes.append(route)
-    else:
-        print(f"Trasa {route} jest niemożliwa w grafie.")
+# Uruchomienie optymalizacji
+best_route, best_score = aco.optimize(start_node="A", end_node="F")
 
-# Wyznaczenie najlepszej trasy
-best_route, best_score = objective_function(valid_routes, vehicle, stations, graph)
+# Wyświetlenie wyników
 print("\nNajlepsza trasa:", best_route)
 print("Najlepszy wynik (score):", best_score)

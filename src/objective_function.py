@@ -1,8 +1,13 @@
 from src.util_functions import calculate_charging_cost, calculate_charging_time, calculate_energy_deficit, calculate_travel_time, is_reachable
 
-def objective_function(routes, vehicle, stations, graph):
+def objective_function(routes, vehicle, stations, graph, penalty=1000):
     """
-    Funkcja celu optymalizująca trasę.
+    Funkcja celu optymalizująca trasę z uwzględnieniem kary za niedopuszczalne rozwiązania.
+    :param routes: Lista tras do analizy.
+    :param vehicle: Obiekt pojazdu elektrycznego.
+    :param stations: Słownik stacji ładowania.
+    :param graph: Obiekt grafu.
+    :param penalty: Wartość kary za niedopuszczalną trasę.
     """
     best_route = None
     best_score = float('inf')
@@ -12,6 +17,7 @@ def objective_function(routes, vehicle, stations, graph):
         total_time = 0
         total_cost = 0
         current_charge = vehicle.charge
+        feasible = True  # Zmienna określająca dopuszczalność trasy
 
         for i in range(len(route) - 1):
             point_i = route[i]
@@ -20,7 +26,8 @@ def objective_function(routes, vehicle, stations, graph):
 
             if edge_data is None:
                 print(f"Brak krawędzi między {point_i} a {point_j}")
-                continue
+                feasible = False
+                break
 
             distance = edge_data["distance"]
             difficulty = edge_data["difficulty"]
@@ -44,6 +51,10 @@ def objective_function(routes, vehicle, stations, graph):
                     total_cost += charging_cost
                     current_charge += deficit
                     print(f"Ładowanie w {point_i}: potrzeba {deficit:.2f} kWh, czas {charging_time:.2f} h, koszt {charging_cost:.2f} zł")
+                else:
+                    print(f"Brak stacji ładowania w {point_i}. Niedopuszczalna trasa.")
+                    feasible = False
+                    break
 
             # Zaktualizuj poziom baterii po przejeździe
             current_charge -= energy_needed
@@ -51,6 +62,9 @@ def objective_function(routes, vehicle, stations, graph):
 
         # Oblicz wynik dla trasy
         score = total_time * 0.75 + total_cost * 0.25
+        if not feasible:
+            score += penalty  # Dodaj karę za niedopuszczalną trasę
+
         print(f"Całkowity czas: {total_time:.2f} h, koszt: {total_cost:.2f} zł, wynik: {score:.2f}")
 
         if score < best_score:
