@@ -21,10 +21,9 @@ for (start, end), distance in distances.items():
 
 # Pojazd elektryczny
 vehicle = ElectricVehicle(
-    max_range=300,          # Zasięg w kilometrach
     energy_per_km=0.2,      # Zużycie energii na kilometr (kWh)
     battery_capacity=60,    # Pojemność baterii (kWh)
-    initial_charge=60       # Początkowy poziom baterii (kWh)
+    initial_charge=50       # Początkowy poziom baterii (kWh)
 )
 
 # Stacje ładowania

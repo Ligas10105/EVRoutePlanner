@@ -24,10 +24,5 @@ class Graph:
             # Pomijaj węzły, które już odwiedziliśmy
             if visited and neighbor in visited:
                 continue
-            # Sprawdź, czy bateria pozwala na przejazd do sąsiada
-            if current_charge is not None and vehicle is not None:
-                distance = edge_data["distance"]
-                if not is_reachable(current_charge, distance, vehicle.energy_per_km):
-                    continue
             valid_neighbors[neighbor] = edge_data
         return valid_neighbors
