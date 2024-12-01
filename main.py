@@ -21,10 +21,9 @@ for (start, end), distance in distances.items():
 
 # Pojazd elektryczny
 vehicle = ElectricVehicle(
-    max_range=300,          # Zasięg w kilometrach
     energy_per_km=0.2,      # Zużycie energii na kilometr (kWh)
     battery_capacity=60,    # Pojemność baterii (kWh)
-    initial_charge=60       # Początkowy poziom baterii (kWh)
+    initial_charge=50       # Początkowy poziom baterii (kWh)
 )
 
 # Stacje ładowania
@@ -41,7 +40,7 @@ aco = AntColonyOptimization(
     vehicle=vehicle,
     stations=stations,
     num_ants=10,            # Liczba mrówek
-    num_iterations=100,     # Liczba iteracji
+    num_iterations=1,     # Liczba iteracji
     evaporation_rate=0.5,   # Szybkość ewaporacji feromonów
     alpha=1,                # Waga feromonów
     beta=2,                 # Waga heurystyki
