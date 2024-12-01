@@ -1,5 +1,3 @@
-from src.util_functions import is_reachable
-
 class Graph:
     def __init__(self):
         self.edges = {}
