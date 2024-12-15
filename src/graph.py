@@ -1,5 +1,3 @@
-from src.util_functions import is_reachable
-
 class Graph:
     def __init__(self):
         self.edges = {}
@@ -37,6 +35,6 @@ class Graph:
                     continue
 
             # Dodaj sąsiada do wynikowego słownika
-            valid_neighbors[neighbor] = edge_data
+
 
         return valid_neighbors

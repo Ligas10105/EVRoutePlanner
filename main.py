@@ -44,7 +44,7 @@ aco = AntColonyOptimization(
     evaporation_rate=0.5,   # Szybkość ewaporacji feromonów
     alpha=1,                # Waga feromonów
     beta=2,                 # Waga heurystyki
-    penalty=1000            # Kara za niedopuszczalne trasy
+    penalty=10            # Kara za niedopuszczalne trasy
 )
 
 # Uruchomienie optymalizacji
