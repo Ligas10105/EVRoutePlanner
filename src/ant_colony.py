@@ -25,6 +25,7 @@ class AntColonyOptimization:
         self.beta = beta
         self.penalty = penalty
         self.pheromones = {edge: 1.0 for edge in self.graph.edges}  # Inicjalizacja feromonów
+        print(f"Algorytm mrówkowy zainicjalizowany z {num_ants} mrówkami, {num_iterations} iteracjami.")
 
     def _select_next_node(self, current_node, visited, current_charge):
         """
@@ -32,6 +33,7 @@ class AntColonyOptimization:
         """
         neighbors = self.graph.get_neighbors(current_node, visited, current_charge, self.vehicle)
         if not neighbors:
+            print(f"Brak sąsiadów dla węzła {current_node}.")
             return None
 
         probabilities = []
@@ -47,7 +49,9 @@ class AntColonyOptimization:
         probabilities = [(node, prob / total) for node, prob in probabilities]
 
         # Losowy wybór na podstawie prawdopodobieństw
-        return random.choices([node for node, _ in probabilities], [prob for _, prob in probabilities])[0]
+        next_node = random.choices([node for node, _ in probabilities], [prob for _, prob in probabilities])[0]
+        print(f"Wybór węzła {next_node} na podstawie feromonów i heurystyki.")
+        return next_node
 
     def _build_solution(self, start_node, end_node):
         """
@@ -58,9 +62,12 @@ class AntColonyOptimization:
         route = [current_node]
         current_charge = self.vehicle.charge
 
+        print(f"Rozpoczęcie budowy trasy od {start_node} do {end_node}.")
+
         while current_node != end_node:
             next_node = self._select_next_node(current_node, visited, current_charge)
             if next_node is None:  # Brak możliwości kontynuowania trasy
+                print(f"Trasa nie może być kontynuowana z węzła {current_node}.")
                 return None  # Niedokończona trasa
             route.append(next_node)
             visited.add(next_node)
@@ -69,23 +76,33 @@ class AntColonyOptimization:
             distance = self.graph.edges[current_node][next_node]["distance"]
             current_charge -= distance * self.vehicle.energy_per_km
 
+            print(f"Na trasie: {current_node} -> {next_node}, poziom baterii: {current_charge:.2f}.")
+
             # Jeśli bateria jest niewystarczająca, spróbuj naładować
             if current_charge < 0:
                 station = self.stations.get(current_node)
                 if station:
-                    current_charge = self.vehicle.battery_capacity  # Zakładamy pełne ładowanie
+                    current_charge = min(self.vehicle.battery_capacity, self.vehicle.battery_capacity)  # Załaduj do maksimum
+                    print(f"Naładowano pojazd na stacji {current_node}. Nowy poziom baterii: {current_charge:.2f}.")
                 else:
+                    print(f"Brak stacji ładowania w {current_node}. Trasa niedokończona.")
                     return None  # Niedokończona trasa z powodu braku energii
 
             current_node = next_node
 
         # Sprawdź, czy trasa osiągnęła węzeł końcowy
-        return route if current_node == end_node else None
+        if current_node == end_node:
+            print(f"Trasa z {start_node} do {end_node} została zakończona pomyślnie.")
+            return route
+        else:
+            print(f"Trasa nie osiągnęła węzła końcowego. Błąd.")
+            return None
 
     def _evaporate_pheromones(self):
         """
         Redukuje ilość feromonów na wszystkich krawędziach (ewaporacja).
         """
+        print("Ewaporacja feromonów.")
         for edge in self.pheromones:
             self.pheromones[edge] *= (1 - self.evaporation_rate)
 
@@ -93,6 +110,7 @@ class AntColonyOptimization:
         """
         Aktualizuje poziom feromonów na podstawie wyników tras.
         """
+        print("Aktualizacja feromonów na podstawie wygenerowanych tras.")
         for route, score in routes:
             pheromone_contribution = 1 / score  # Im lepszy wynik, tym większy wkład
             for i in range(len(route) - 1):
@@ -106,6 +124,8 @@ class AntColonyOptimization:
         """
         best_route = None
         best_score = float("inf")
+
+        print(f"Rozpoczynam optymalizację od {start_node} do {end_node}.")
 
         for iteration in range(self.num_iterations):
             routes = []
@@ -128,4 +148,5 @@ class AntColonyOptimization:
 
             print(f"Iteracja {iteration + 1}/{self.num_iterations}: Najlepszy wynik = {best_score:.2f}")
 
+        print(f"Optymalizacja zakończona. Najlepsza trasa: {best_route} o wyniku {best_score:.2f}.")
         return best_route, best_score
