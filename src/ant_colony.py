@@ -149,4 +149,8 @@ class AntColonyOptimization:
             print(f"Iteracja {iteration + 1}/{self.num_iterations}: Najlepszy wynik = {best_score:.2f}")
 
         print(f"Optymalizacja zakończona. Najlepsza trasa: {best_route} o wyniku {best_score:.2f}.")
+<<<<<<< HEAD
         return best_route, best_score
+=======
+        return best_route, best_score
+>>>>>>> 03dee4790cc56488c3e80c2f936a3d2c56e631ee

@@ -40,8 +40,13 @@ aco = AntColonyOptimization(
     vehicle=vehicle,
     stations=stations,
     num_ants=10,            # Liczba mrówek
+<<<<<<< HEAD
     num_iterations=10,     # Liczba iteracji
     evaporation_rate=0.3,   # Szybkość ewaporacji feromonów
+=======
+    num_iterations=1,     # Liczba iteracji
+    evaporation_rate=0.5,   # Szybkość ewaporacji feromonów
+>>>>>>> 03dee4790cc56488c3e80c2f936a3d2c56e631ee
     alpha=1,                # Waga feromonów
     beta=2,                 # Waga heurystyki
     penalty=10            # Kara za niedopuszczalne trasy
