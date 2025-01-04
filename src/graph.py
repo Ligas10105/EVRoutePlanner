@@ -16,25 +16,11 @@ class Graph:
         :param vehicle: Obiekt pojazdu elektrycznego (opcjonalnie)
         :return: Słownik sąsiadów (dostępnych węzłów)
         """
-        # Jeśli visited nie zostało przekazane, przypisz pusty zbiór
-        visited = visited if visited is not None else set()
-        
-        # Sprawdź dostępnych sąsiadów dla danego węzła
         neighbors = self.edges.get(node, {})
         valid_neighbors = {}
-
         for neighbor, edge_data in neighbors.items():
             # Pomijaj węzły, które już odwiedziliśmy
-            if neighbor in visited:
+            if visited and neighbor in visited:
                 continue
-
-            # Jeśli dostępne dane o pojeździe i poziomie naładowania, sprawdź, czy pojazd może przejechać do sąsiada
-            if current_charge is not None and vehicle is not None:
-                distance = edge_data["distance"]
-                if not is_reachable(current_charge, distance, vehicle.energy_per_km):
-                    continue
-
-            # Dodaj sąsiada do wynikowego słownika
-
-
+            valid_neighbors[neighbor] = edge_data
         return valid_neighbors
