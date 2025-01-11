@@ -106,18 +106,33 @@ def main_window():
             ax.set_ylim([center_y - new_height / 2, center_y + new_height / 2])
             canvas.draw()
 
-    def show_iteration_plot(iteration_scores, num_iterations):
+    def show_iteration_plot(iteration_scores, num_iterations, best_route, best_score):
+        # Tworzymy nowe okno
+        new_window = tk.Toplevel()
+        new_window.title("Optimization Progress")
+        new_window.geometry("800x600")  # Rozmiar okna
+
+        # Tworzenie wykresu
         fig, ax = plt.subplots(figsize=(8, 4))
         ax.plot(range(1, len(iteration_scores) + 1), iteration_scores, marker='o')
-        ax.set_xlim(1, num_iterations)  # Ensure x-axis spans all iterations
+        ax.set_xlim(1, num_iterations)
         ax.set_title("Optimization Progress")
         ax.set_xlabel("Iteration")
         ax.set_ylabel("Best Score")
         ax.grid(True)
 
-        canvas = FigureCanvasTkAgg(fig, master=graph_and_results_frame)
+        # Wykres w oknie
+        canvas = FigureCanvasTkAgg(fig, master=new_window)
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         canvas.draw()
+
+        # Dodanie wyników pod wykresem
+        result_frame = ttk.Frame(new_window, padding=10)
+        result_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Wyniki w kolorze zielonym
+        ttk.Label(result_frame, text=f"Best Route: {best_route}", font=("Helvetica", 12), foreground="green").pack(anchor="w", pady=5)
+        ttk.Label(result_frame, text=f"Best Score: {best_score:.2f}", font=("Helvetica", 12), foreground="green").pack(anchor="w", pady=5)
 
     # --- Graph Generation Tab ---
     def generate_graph():
@@ -239,7 +254,7 @@ def main_window():
             penalty = float(penalty_entry.get())
             start_node = start_node_entry.get()
             end_node = end_node_entry.get()
-
+          
             vehicle = ElectricVehicle(energy_per_km, battery_capacity, initial_charge)
 
             # Create graph object from generated data
@@ -265,7 +280,7 @@ def main_window():
 
             # Display results in the right panel
             show_graph(current_graph, best_route, pos=current_pos)
-            show_iteration_plot(iteration_scores, num_iterations)
+            show_iteration_plot(iteration_scores, num_iterations, best_route, best_score)
 
             result_text = f"Best Route: {best_route}\nBest Score: {best_score:.2f}"
             for widget in graph_and_results_frame.winfo_children():
