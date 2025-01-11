@@ -22,6 +22,7 @@ def run_interface():
     root = tk.Tk()
     root.geometry("1200x800")
     root.title("Electronic Vehicle Route Planner")
+    root.iconbitmap("assets/EVRoutePlanner.ico")
 
     # Konfiguracja siatki dla głównego okna
     root.grid_rowconfigure(0, weight=1)  # Sekcja wyników
