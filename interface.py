@@ -3,104 +3,139 @@ from tkinter import ttk
 import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from main import distances, nodes
+from src.graph import Graph
+from src.vehicle import ElectricVehicle
+from src.charging_station import ChargingStation
+from src.ant_colony import AntColonyOptimization
 
-# Inicjalizacja głównego okna
-root = tk.Tk()
-root.geometry("1200x600")
-root.title("Ant Colony Optimization")
+# Stała definicja distances
+distances = {
+    ("A", "B"): 100, ("A", "C"): 150, ("A", "D"): 200, ("A", "E"): 250, ("A", "F"): 300,
+    ("B", "C"): 50, ("B", "D"): 120, ("B", "E"): 150, ("B", "F"): 200,
+    ("C", "D"): 80, ("C", "E"): 100, ("C", "F"): 200,
+    ("D", "E"): 60, ("D", "F"): 150,
+    ("E", "F"): 100,
+}
 
-# Funkcja do ustawienia proporcji okien
-def configure_grid_weights():
-    root.grid_rowconfigure(0, weight=1)
+def run_interface():
+    # Inicjalizacja głównego okna
+    root = tk.Tk()
+    root.geometry("1200x800")
+    root.title("Electronic Vehicle Route Planner")
+    root.iconbitmap("assets/EVRoutePlanner.ico")
+
+    # Konfiguracja siatki dla głównego okna
+    root.grid_rowconfigure(0, weight=1)  # Sekcja wyników
+    root.grid_rowconfigure(1, weight=4)  # Sekcja grafu
     root.grid_columnconfigure(0, weight=1)
-    root.grid_columnconfigure(1, weight=2)
+    root.grid_columnconfigure(1, weight=3)
 
-# Ramka na lewą część (parametry)
-left_frame = tk.Frame(root, bg="lightgray", padx=5, pady=5)
-left_frame.grid(row=0, column=0, sticky="nsew")
+    # Ramka na lewą część (parametry)
+    left_frame = tk.Frame(root, bg="lightgray", padx=5, pady=5)
+    left_frame.grid(row=0, column=0, rowspan=2, sticky="nsew")  # Rozciągnięcie na dwie sekcje
 
-# Ramka na prawą część (do wyświetlania grafu)
-right_frame = tk.Frame(root, bg="white")
-right_frame.grid(row=0, column=1, sticky="nsew")
+    # Ramka na wyniki
+    results_frame = tk.Frame(root, bg="white")
+    results_frame.grid(row=0, column=1, sticky="nsew")
 
-# Etykieta tytułu
-title_label = tk.Label(left_frame, text="Electronic Vehicle Route Planner", font=("Helvetica", 14), bg="lightgray")
-title_label.grid(row=0, column=0, columnspan=2, pady=5)
+    # Ramka na graf
+    graph_frame = tk.Frame(root, bg="white")
+    graph_frame.grid(row=1, column=1, sticky="nsew")
 
-# Funkcja do tworzenia pola wprowadzania z etykietą
-def create_entry_field(parent, label_text, row, width=10):
-    label = tk.Label(parent, text=label_text, bg="lightgray")
-    label.grid(row=row, column=0, sticky="w", padx=5, pady=5)
-    entry = ttk.Entry(parent, width=width)
-    entry.grid(row=row, column=1, padx=5, pady=5, sticky="w")
-    return entry
+    # Etykieta wyników w ramce „Wyniki”
+    result_label = tk.Label(results_frame, text="Wyniki pojawią się tutaj", bg="white", font=("Helvetica", 14))
+    result_label.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-# Parametry auta
-car_params_label = tk.Label(left_frame, text="Parametry auta", font=("Helvetica", 12, "bold"), bg="lightgray")
-car_params_label.grid(row=1, column=0, columnspan=2, sticky="w", pady=(10, 5))
+    # Funkcja do tworzenia pola wprowadzania z etykietą
+    def create_entry_field(parent, label_text, row, width=10):
+        label = tk.Label(parent, text=label_text, bg="lightgray")
+        label.grid(row=row, column=0, sticky="w", padx=5, pady=5)
+        entry = ttk.Entry(parent, width=width)
+        entry.grid(row=row, column=1, sticky="ew", padx=5, pady=5)
+        return entry
 
-energy_consumption_entry = create_entry_field(left_frame, "Zużycie energii na km:", row=2)
-battery_capacity_entry = create_entry_field(left_frame, "Pojemność baterii:", row=3)
-initial_battery_entry = create_entry_field(left_frame, "Początkowy poziom baterii:", row=4)
+    # Konfiguracja siatki dla ramki po lewej stronie
+    for i in range(12):  # Ustal ilość wierszy w grid
+        left_frame.grid_rowconfigure(i, weight=1)
+    left_frame.grid_columnconfigure(0, weight=1)
+    left_frame.grid_columnconfigure(1, weight=1)
 
-# Parametry grafu
-graph_params_label = tk.Label(left_frame, text="Parametry grafu", font=("Helvetica", 12, "bold"), bg="lightgray")
-graph_params_label.grid(row=5, column=0, columnspan=2, sticky="w", pady=(10, 5))
+    # Parametry pojazdu
+    energy_consumption_entry = create_entry_field(left_frame, "Zużycie energii na km:", row=1)
+    battery_capacity_entry = create_entry_field(left_frame, "Pojemność baterii:", row=2)
+    initial_charge_entry = create_entry_field(left_frame, "Początkowy poziom baterii:", row=3)
 
-vertices_entry = create_entry_field(left_frame, "Ilość wierzchołków do wygenerowania:", row=6)
-stations_entry = create_entry_field(left_frame, "Ilość stacji w grafie:", row=7)
+    # Parametry algorytmu mrówkowego
+    num_ants_entry = create_entry_field(left_frame, "Liczba mrówek:", row=4)
+    iterations_entry = create_entry_field(left_frame, "Liczba iteracji:", row=5)
+    evaporation_rate_entry = create_entry_field(left_frame, "Szybkość ewaporacji:", row=6)
+    alpha_entry = create_entry_field(left_frame, "Waga feromonów:", row=7)
+    beta_entry = create_entry_field(left_frame, "Waga heurystyki:", row=8)
+    penalty_entry = create_entry_field(left_frame, "Kara za niedopuszczalne trasy:", row=9)
 
-# Parametry mrówek
-ant_params_label = tk.Label(left_frame, text="Parametry mrówek", font=("Helvetica", 12, "bold"), bg="lightgray")
-ant_params_label.grid(row=8, column=0, columnspan=2, sticky="w", pady=(10, 5))
+    # Funkcja do wizualizacji grafu
+    def show_graph():
+        graph = Graph()
+        for (start, end), distance in distances.items():
+            graph.add_edge(start, end, distance)
+            graph.add_edge(end, start, distance)
 
-num_ants_entry = create_entry_field(left_frame, "Ilość mrówek:", row=9)
-iterations_entry = create_entry_field(left_frame, "Ilość iteracji:", row=10)
-evaporation_entry = create_entry_field(left_frame, "Szybkość ewaporacji feromonów:", row=11)
-pheromone_weight_entry = create_entry_field(left_frame, "Waga feromonów:", row=12)
-heuristic_weight_entry = create_entry_field(left_frame, "Waga heurystyki:", row=13)
-penalty_entry = create_entry_field(left_frame, "Kara za niedopuszczalne trasy:", row=14)
+        G = nx.Graph()
+        for node1 in graph.edges:
+            for node2, edge_data in graph.edges[node1].items():
+                G.add_edge(node1, node2, weight=edge_data["distance"])
 
-# Przyciski
-buttons_frame = tk.Frame(left_frame, bg="lightgray", pady=10)
-buttons_frame.grid(row=15, column=0, columnspan=2, pady=(20, 0))
+        pos = nx.spring_layout(G, seed=42)
+        fig, ax = plt.subplots(figsize=(6, 4))
 
-show_graph_button = tk.Button(buttons_frame, text="Pokaż graf", bg="white", font=("Helvetica", 10), width=15)
-show_graph_button.pack(side="left", padx=10)
+        nx.draw(G, pos, with_labels=True, node_size=700, node_color="lightblue",
+                font_size=10, font_weight="bold", edge_color="gray", ax=ax)
+        edge_labels = nx.get_edge_attributes(G, "weight")
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels,
+                                     font_color="red", font_size=8, ax=ax)
 
-test_button = tk.Button(buttons_frame, text="Test", bg="white", font=("Helvetica", 10), width=15)
-test_button.pack(side="left", padx=10)
+        # Wyświetlenie grafu
+        for widget in graph_frame.winfo_children():
+            widget.destroy()
+        canvas = FigureCanvasTkAgg(fig, master=graph_frame)
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        canvas.draw()
 
-# Funkcja do wyświetlania grafu
-def show_graph():
-    # Sprawdzamy, czy graf już został wyświetlony
-    for widget in right_frame.winfo_children():
-        widget.destroy()  # Usuwamy poprzedni graf, jeśli istnieje
+    # Funkcja do uruchamiania optymalizacji
+    def run_optimization():
+        energy_per_km = float(energy_consumption_entry.get())
+        battery_capacity = float(battery_capacity_entry.get())
+        initial_charge = float(initial_charge_entry.get())
+        num_ants = int(num_ants_entry.get())
+        num_iterations = int(iterations_entry.get())
+        evaporation_rate = float(evaporation_rate_entry.get())
+        alpha = float(alpha_entry.get())
+        beta = float(beta_entry.get())
+        penalty = float(penalty_entry.get())
 
-    G = nx.Graph()
-    G.add_nodes_from(nodes)
-    for (node1, node2), distance in distances.items():
-        G.add_edge(node1, node2, weight=distance)
+        vehicle = ElectricVehicle(energy_per_km, battery_capacity, initial_charge)
+        graph = Graph()
+        for (start, end), distance in distances.items():
+            graph.add_edge(start, end, distance)
 
-    edge_labels = nx.get_edge_attributes(G, "weight")
-    
-    pos = nx.spring_layout(G, seed=42)  # Układ wierzchołków
-    fig, ax = plt.subplots(figsize=(6, 4))  # Tworzymy wykres
+        stations = {
+            "B": ChargingStation("B", 10, 20, 0.5, 0.2, 50),
+            "C": ChargingStation("C", 20, 30, 0.6, 0.1, 60),
+            "D": ChargingStation("D", 30, 40, 0.4, 0.3, 55),
+            "E": ChargingStation("E", 40, 50, 0.7, 0.2, 45),
+        }
 
-    nx.draw(G, pos, with_labels=True, node_size=700, node_color="lightblue", font_size=10, font_weight="bold", edge_color="gray", ax=ax)
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_color="red", font_size=8, ax=ax)
+        aco = AntColonyOptimization(graph, vehicle, stations, num_ants, num_iterations,
+                                     evaporation_rate, alpha, beta, penalty)
+        best_route, best_score = aco.optimize(start_node="A", end_node="F")
 
-    # Osadzanie wykresu na canvasie Tkinter
-    canvas = FigureCanvasTkAgg(fig, master=right_frame)
-    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-    canvas.draw()
+        result_label.config(text=f"Najlepsza trasa: {best_route}\nNajlepszy wynik: {best_score:.2f}")
 
-# Funkcja do konfiguracji siatki
-configure_grid_weights()
+    # Przyciski
+    graph_button = tk.Button(left_frame, text="Pokaż graf", command=show_graph)
+    graph_button.grid(row=10, column=0, columnspan=2, pady=10, sticky="ew")
 
-# Łączenie funkcji do przycisku
-show_graph_button.config(command=show_graph)
+    optimize_button = tk.Button(left_frame, text="Uruchom optymalizację", command=run_optimization)
+    optimize_button.grid(row=11, column=0, columnspan=2, pady=10, sticky="ew")
 
-# Uruchomienie pętli aplikacji
-root.mainloop()
+    root.mainloop()
