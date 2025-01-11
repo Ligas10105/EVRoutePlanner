@@ -39,8 +39,9 @@ def main_window():
     def show_graph(G, route=None, pos=None):
         if pos is None:
             pos = nx.spring_layout(G, weight="distance", seed=42)
-        fig, ax = plt.subplots(figsize=(8, 6))
 
+        # Tworzenie figury i osi
+        fig, ax = plt.subplots(figsize=(8, 6))
         nx.draw(G, pos, with_labels=True, node_size=700, node_color="lightblue", font_size=10, font_weight="bold", edge_color="gray", ax=ax)
 
         if route:
@@ -52,9 +53,58 @@ def main_window():
 
         for widget in graph_and_results_frame.winfo_children():
             widget.destroy()
+
+        # Dodanie ramki przycisków u góry
+        button_frame = ttk.Frame(graph_and_results_frame)
+        button_frame.pack(side=tk.TOP, fill=tk.X, pady=5)
+
+        # Dodanie przycisków ze strzałkami do przesuwania i przybliżania/oddalania
+        ttk.Button(button_frame, text="←", command=lambda: move_view("left")).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="→", command=lambda: move_view("right")).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="↑", command=lambda: move_view("up")).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="↓", command=lambda: move_view("down")).pack(side=tk.LEFT, padx=5)
+
+        ttk.Button(button_frame, text="Przybliż", command=lambda: zoom(0.8)).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="Oddal", command=lambda: zoom(1.2)).pack(side=tk.LEFT, padx=5)
+
         canvas = FigureCanvasTkAgg(fig, master=graph_and_results_frame)
-        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        canvas_widget = canvas.get_tk_widget()
+        canvas_widget.pack(fill=tk.BOTH, expand=True)
         canvas.draw()
+
+        # Funkcje do przesuwania widoku
+        def move_view(direction):
+            step_x = (ax.get_xlim()[1] - ax.get_xlim()[0]) * 0.1
+            step_y = (ax.get_ylim()[1] - ax.get_ylim()[0]) * 0.1
+            cur_xlim = ax.get_xlim()
+            cur_ylim = ax.get_ylim()
+
+            if direction == "up":
+                ax.set_ylim([cur_ylim[0] + step_y, cur_ylim[1] + step_y])
+            elif direction == "down":
+                ax.set_ylim([cur_ylim[0] - step_y, cur_ylim[1] - step_y])
+            elif direction == "left":
+                ax.set_xlim([cur_xlim[0] - step_x, cur_xlim[1] - step_x])
+            elif direction == "right":
+                ax.set_xlim([cur_xlim[0] + step_x, cur_xlim[1] + step_x])
+
+            canvas.draw()
+
+        # Funkcja obsługująca przybliżanie i centrowanie grafu
+        def zoom(scale_factor):
+            cur_xlim = ax.get_xlim()
+            cur_ylim = ax.get_ylim()
+
+            # Wyliczanie nowej szerokości i wysokości
+            new_width = (cur_xlim[1] - cur_xlim[0]) * scale_factor
+            new_height = (cur_ylim[1] - cur_ylim[0]) * scale_factor
+
+            center_x = (cur_xlim[0] + cur_xlim[1]) / 2
+            center_y = (cur_ylim[0] + cur_ylim[1]) / 2
+
+            ax.set_xlim([center_x - new_width / 2, center_x + new_width / 2])
+            ax.set_ylim([center_y - new_height / 2, center_y + new_height / 2])
+            canvas.draw()
 
     def show_iteration_plot(iteration_scores, num_iterations):
         fig, ax = plt.subplots(figsize=(8, 4))
