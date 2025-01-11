@@ -1,4 +1,4 @@
-from interface import run_interface
+from interface import main_window
 
 if __name__ == "__main__":
-    run_interface()
+    main_window()
