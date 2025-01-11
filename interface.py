@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, filedialog
 import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -56,6 +56,19 @@ def main_window():
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         canvas.draw()
 
+    def show_iteration_plot(iteration_scores, num_iterations):
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.plot(range(1, len(iteration_scores) + 1), iteration_scores, marker='o')
+        ax.set_xlim(1, num_iterations)  # Ensure x-axis spans all iterations
+        ax.set_title("Optimization Progress")
+        ax.set_xlabel("Iteration")
+        ax.set_ylabel("Best Score")
+        ax.grid(True)
+
+        canvas = FigureCanvasTkAgg(fig, master=graph_and_results_frame)
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        canvas.draw()
+
     # --- Graph Generation Tab ---
     def generate_graph():
         try:
@@ -65,6 +78,21 @@ def main_window():
             update_graph()
         except subprocess.CalledProcessError as e:
             result_label.config(text=f"Error generating graph: {e}")
+
+    def load_graph():
+        global distances, nodes, stations, current_graph, current_pos
+        file_path = filedialog.askopenfilename(title="Select Graph File", filetypes=[("Python Files", "*.py")])
+        if file_path:
+            try:
+                imported_graph = {}
+                exec(open(file_path).read(), {}, imported_graph)
+                distances = imported_graph.get("distances", {})
+                nodes = imported_graph.get("nodes", [])
+                stations = imported_graph.get("stations", {})
+                update_graph()
+                result_label.config(text="Graph loaded successfully!")
+            except Exception as e:
+                result_label.config(text=f"Error loading graph: {e}")
 
     def update_graph():
         global current_graph, current_pos
@@ -80,6 +108,7 @@ def main_window():
     graph_controls_frame.pack(fill=tk.BOTH, expand=True)
 
     ttk.Button(graph_controls_frame, text="Generate Graph", command=generate_graph).pack(fill=tk.X, pady=5)
+    ttk.Button(graph_controls_frame, text="Load Graph from File", command=load_graph).pack(fill=tk.X, pady=5)
     ttk.Label(graph_controls_frame, text="Start Node:").pack(anchor="w", pady=5)
     start_node_entry = ttk.Entry(graph_controls_frame)
     start_node_entry.pack(fill=tk.X)
@@ -168,6 +197,8 @@ def main_window():
             for (node1, node2), distance in distances.items():
                 graph.add_edge(node1, node2, distance)
 
+            iteration_scores = []
+
             aco = AntColonyOptimization(
                 graph=graph,
                 vehicle=vehicle,
@@ -177,13 +208,14 @@ def main_window():
                 evaporation_rate=evaporation_rate,
                 alpha=alpha,
                 beta=beta,
-                penalty=penalty,
+                penalty=penalty
             )
 
-            best_route, best_score = aco.optimize(start_node, end_node)
+            best_route, best_score, iteration_scores = aco.optimize(start_node, end_node)
 
             # Display results in the right panel
             show_graph(current_graph, best_route, pos=current_pos)
+            show_iteration_plot(iteration_scores, num_iterations)
 
             result_text = f"Best Route: {best_route}\nBest Score: {best_score:.2f}"
             for widget in graph_and_results_frame.winfo_children():
