@@ -164,12 +164,10 @@ class AntColonyOptimization:
             # Dodanie liczby unikalnych tras do listy
             unique_paths_per_iteration.append(len(unique_paths))
 
-        #     print(f"Iteracja {iteration + 1}/{self.num_iterations}: "
-        #         f"Najlepszy wynik = {best_score:.2f}, średni wynik = {average_score:.2f}, "
-        #         f"różnica = {score_difference:.2f}, długość trasy = {best_distance:.2f} km, "
-        #         f"czas = {end_time - start_time:.2f} s, unikalne trasy = {len(unique_paths)}")
+        # Obliczenie średniego czasu dla wszystkich iteracji
+        avg_time_per_iteration = sum(iteration_times) / self.num_iterations if self.num_iterations > 0 else 0
 
-        # print(f"Optymalizacja zakończona. Najlepsza trasa: {best_route}, długość: {best_distance:.2f} km, "
-        #     f"wynik: {best_score:.2f}.")
+        # Dodanie liczby unikalnych ścieżek (zestaw zawiera tylko unikalne ścieżki)
+        total_unique_paths = len(unique_paths)
 
-        return best_route, best_score, iteration_scores, iteration_times, best_distance, unique_paths_per_iteration, average_scores_per_iteration, score_differences
+        return best_route, best_score, iteration_scores, iteration_times, best_distance, unique_paths_per_iteration, average_scores_per_iteration, score_differences, avg_time_per_iteration, total_unique_paths

@@ -305,7 +305,7 @@ def main_window():
                 pheromone_importance_probability=pheromone_importance_probability,
                 penalty=penalty
             )
-            best_route, best_score, iteration_scores, iteration_times, best_distance, all_routes, average_scores_per_iteration, score_differences = aco.optimize(start_node, end_node)
+            best_route, best_score, iteration_scores, iteration_times, best_distance, all_routes, average_scores_per_iteration, score_differences, avg_time_per_iteration, total_unique_paths = aco.optimize(start_node, end_node)
 
             # Wyświetlanie wyników
             show_graph(current_graph, best_route, pos=current_pos)
@@ -313,11 +313,19 @@ def main_window():
 
             result_text = (f"Best Route: {best_route}\n"
                         f"Best Score: {best_score:.2f}\n"
-                        f"Total Distance: {best_distance:.2f} km")
+                        f"Total Distance: {best_distance:.2f} km\n"
+                        f"Average Time per Iteration: {avg_time_per_iteration:.5f} s\n"
+                        f"Total Unique Paths: {total_unique_paths}")
+
+            # Usuwanie poprzednich etykiet w przypadku aktualizacji wyników
             for widget in graph_and_results_frame.winfo_children():
                 if isinstance(widget, ttk.Label):
                     widget.destroy()
-            ttk.Label(graph_and_results_frame, text=result_text, font=("Helvetica", 12), foreground="green").pack(anchor="n", pady=5)
+
+            # Tworzenie nowych etykiet z wynikami
+            result_label = ttk.Label(graph_and_results_frame, text=result_text)
+            result_label.pack()
+
 
         except Exception as e:
             ttk.Label(graph_and_results_frame, text=f"Error: {e}", font=("Helvetica", 12), foreground="red").pack(anchor="n", pady=5)
