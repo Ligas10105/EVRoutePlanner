@@ -14,26 +14,21 @@ def main_window():
     root.geometry("1200x800")
     root.title("Electric Vehicle Route Planner")
 
-    # Create main layout frames
     left_frame = ttk.Frame(root, width=300, padding=10)
     left_frame.pack(side=tk.LEFT, fill=tk.Y)
 
     right_frame = ttk.Frame(root, padding=10)
     right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
-    # Create notebook for tabs in the left frame
     notebook = ttk.Notebook(left_frame)
     notebook.pack(fill=tk.BOTH, expand=True)
 
-    # Tab 1: Graph Generation
     graph_tab = ttk.Frame(notebook)
     notebook.add(graph_tab, text="Graph Generation")
 
-    # Tab 2: Optimization
     optimization_tab = ttk.Frame(notebook)
     notebook.add(optimization_tab, text="Optimization")
 
-    # --- Right Panel for Graph and Results ---
     graph_and_results_frame = ttk.LabelFrame(right_frame, text="Graph and Results", padding=10)
     graph_and_results_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -41,7 +36,6 @@ def main_window():
         if pos is None:
             pos = nx.spring_layout(G, weight="distance", seed=42)
 
-        # Tworzenie figury i osi
         fig, ax = plt.subplots(figsize=(8, 6))
         nx.draw(G, pos, with_labels=True, node_size=700, node_color="lightblue", font_size=10, font_weight="bold", edge_color="gray", ax=ax)
 
@@ -55,11 +49,9 @@ def main_window():
         for widget in graph_and_results_frame.winfo_children():
             widget.destroy()
 
-        # Dodanie ramki przycisków u góry
         button_frame = ttk.Frame(graph_and_results_frame)
         button_frame.pack(side=tk.TOP, fill=tk.X, pady=5)
 
-        # Dodanie przycisków ze strzałkami do przesuwania i przybliżania/oddalania
         ttk.Button(button_frame, text="←", command=lambda: move_view("left")).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text="→", command=lambda: move_view("right")).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text="↑", command=lambda: move_view("up")).pack(side=tk.LEFT, padx=5)
@@ -73,7 +65,6 @@ def main_window():
         canvas_widget.pack(fill=tk.BOTH, expand=True)
         canvas.draw()
 
-        # Funkcje do przesuwania widoku
         def move_view(direction):
             step_x = (ax.get_xlim()[1] - ax.get_xlim()[0]) * 0.1
             step_y = (ax.get_ylim()[1] - ax.get_ylim()[0]) * 0.1
@@ -91,12 +82,10 @@ def main_window():
 
             canvas.draw()
 
-        # Funkcja obsługująca przybliżanie i centrowanie grafu
         def zoom(scale_factor):
             cur_xlim = ax.get_xlim()
             cur_ylim = ax.get_ylim()
 
-            # Wyliczanie nowej szerokości i wysokości
             new_width = (cur_xlim[1] - cur_xlim[0]) * scale_factor
             new_height = (cur_ylim[1] - cur_ylim[0]) * scale_factor
 
@@ -112,7 +101,7 @@ def main_window():
         new_window.title("Optimization Progress")
         new_window.geometry("800x600")
 
-        fig, ax = plt.subplots(4, 1, figsize=(8, 10))  # Dodajemy jeden wykres więcej
+        fig, ax = plt.subplots(4, 1, figsize=(8, 10)) 
 
         # Wykres wyników
         ax[0].plot(range(1, len(iteration_scores) + 1), iteration_scores, marker='o', label="Best Score")
@@ -162,8 +151,6 @@ def main_window():
         ttk.Label(result_frame, text=f"Best Score: {best_score:.2f}", font=("Helvetica", 12), foreground="green").pack(anchor="w", pady=5)
         ttk.Label(result_frame, text=f"Total Distance: {best_distance:.2f} km", font=("Helvetica", 12), foreground="green").pack(anchor="w", pady=5)
 
-
-    # --- Graph Generation Tab ---
     def generate_graph():
         try:
             import subprocess
@@ -212,9 +199,7 @@ def main_window():
     result_label = ttk.Label(graph_controls_frame, text="", foreground="blue")
     result_label.pack(anchor="w", pady=5)
 
-    # Shared Reset Button
     def reset_all():
-        # Reset entries and clear graph and results
         start_node_entry.delete(0, tk.END)
         end_node_entry.delete(0, tk.END)
 
@@ -250,7 +235,6 @@ def main_window():
 
     ttk.Button(left_frame, text="Reset All", command=reset_all).pack(fill=tk.X, pady=10)
 
-    # --- Optimization Tab ---
     def create_entry_field(parent, label_text, default_value):
         frame = ttk.Frame(parent)
         frame.pack(fill=tk.X, pady=5)

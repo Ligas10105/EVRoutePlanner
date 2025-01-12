@@ -62,17 +62,17 @@ class AntColonyOptimization:
         visited = {current_node}
         route = [current_node]
         current_charge = self.vehicle.charge
-        total_distance = 0  # Dodanie zmiennej do przechowywania całkowitej długości
+        total_distance = 0 
 
         while current_node != end_node:
             next_node = self._select_next_node(current_node, visited, current_charge)
             if next_node is None:
-                return None, None  # Zwracamy również brak długości
+                return None, None 
             route.append(next_node)
             visited.add(next_node)
 
             distance = self.graph.edges[current_node][next_node]["distance"]
-            total_distance += distance  # Dodawanie długości krawędzi
+            total_distance += distance  
             current_charge -= distance * self.vehicle.energy_per_km
 
             if current_charge < 0:
@@ -114,10 +114,10 @@ class AntColonyOptimization:
         best_distance = float("inf")
         iteration_scores = []
         iteration_times = []
-        unique_paths_per_iteration = []  # Lista do przechowywania unikalnych tras w każdej iteracji
-        average_scores_per_iteration = []  # Lista średnich wyników w każdej iteracji
-        score_differences = []  # Lista różnic między średnią a najlepszym wynikiem
-        unique_paths = set()  # Zestaw do przechowywania unikalnych tras w bieżącej iteracji
+        unique_paths_per_iteration = [] 
+        average_scores_per_iteration = [] 
+        score_differences = [] 
+        unique_paths = set()   
 
         for iteration in range(self.num_iterations):
             start_time = time.time()

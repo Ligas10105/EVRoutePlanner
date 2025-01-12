@@ -11,12 +11,11 @@ def generate_graph(output_file="generated_graph.py", num_nodes=100, num_edges=10
     :param num_edges: Liczba krawędzi w grafie.
     :param num_stations: Liczba stacji ładowania w grafie.
     """
-    nodes = [f"N{i}" for i in range(num_nodes)]  # Tworzymy węzły N0, N1, ..., N(num_nodes-1)
+    nodes = [f"N{i}" for i in range(num_nodes)] 
     graph = Graph()
     distances = {}
     stations = {}
 
-    # Początkowe połączenia między wierzchołkami (każdy wierzchołek ma przynajmniej jedną krawędź)
     for i in range(num_nodes):
         start = nodes[i]
         end = nodes[(i + 1) % num_nodes]  # Łączenie wierzchołków w cyklu
@@ -39,10 +38,8 @@ def generate_graph(output_file="generated_graph.py", num_nodes=100, num_edges=10
             distances[(start, end)] = distance
             distances[(end, start)] = distance
 
-    # Upewnij się, że każdy węzeł ma co najmniej jedną krawędź
     for node in nodes:
         if node not in graph.edges or not graph.edges[node]:
-            # Węzeł nie ma żadnych połączeń, wybierz losowy węzeł do połączenia
             potential_target = random.choice([n for n in nodes if n != node])
             distance = random.randint(10, 100)
             difficulty = round(random.uniform(1.0, 2.0), 2)
@@ -51,7 +48,6 @@ def generate_graph(output_file="generated_graph.py", num_nodes=100, num_edges=10
             distances[(node, potential_target)] = distance
             distances[(potential_target, node)] = distance
 
-    # Generowanie stacji ładowania
     for _ in range(num_stations):
         station_node = random.choice(nodes)
         if station_node not in stations:
@@ -67,7 +63,6 @@ def generate_graph(output_file="generated_graph.py", num_nodes=100, num_edges=10
                 max_power=max_power,
             )
 
-    # Zapis do pliku
     with open(output_file, "w") as f:
         f.write("from src.graph import Graph\n")
         f.write("from src.charging_station import ChargingStation\n\n")
