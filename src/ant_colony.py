@@ -1,5 +1,6 @@
 import random
 from src.objective_function import objective_function
+import time
 
 class AntColonyOptimization:
     def __init__(self, graph, vehicle, stations, num_ants, num_iterations, evaporation_rate, alpha, beta, penalty=1000, pheromone_importance_probability=0.8):
@@ -19,6 +20,7 @@ class AntColonyOptimization:
         self.graph = graph
         self.vehicle = vehicle
         self.stations = stations
+
         self.num_ants = num_ants
         self.num_iterations = num_iterations
         self.evaporation_rate = evaporation_rate
@@ -26,6 +28,7 @@ class AntColonyOptimization:
         self.beta = beta
         self.penalty = penalty
         self.pheromone_importance_probability = pheromone_importance_probability
+        
         self.pheromones = {edge: 1.0 for edge in self.graph.edges}  # Inicjalizacja feromonów
         print(f"Algorytm mrówkowy zainicjalizowany z {num_ants} mrówkami, {num_iterations} iteracjami.")
 
@@ -56,22 +59,21 @@ class AntColonyOptimization:
             return next_node
 
     def _build_solution(self, start_node, end_node):
-        """
-        Buduje trasę przy pomocy jednej mrówki.
-        """
         current_node = start_node
         visited = {current_node}
         route = [current_node]
         current_charge = self.vehicle.charge
+        total_distance = 0  # Dodanie zmiennej do przechowywania całkowitej długości
 
         while current_node != end_node:
             next_node = self._select_next_node(current_node, visited, current_charge)
             if next_node is None:
-                return None
+                return None, None  # Zwracamy również brak długości
             route.append(next_node)
             visited.add(next_node)
 
             distance = self.graph.edges[current_node][next_node]["distance"]
+            total_distance += distance  # Dodawanie długości krawędzi
             current_charge -= distance * self.vehicle.energy_per_km
 
             if current_charge < 0:
@@ -79,14 +81,15 @@ class AntColonyOptimization:
                 if station:
                     current_charge = min(self.vehicle.battery_capacity, self.vehicle.battery_capacity)
                 else:
-                    return None
+                    return None, None
 
             current_node = next_node
 
         if current_node == end_node:
-            return route
+            return route, total_distance  # Zwracamy trasę i jej długość
         else:
-            return None
+            return None, None
+
 
     def _evaporate_pheromones(self):
         """
@@ -107,31 +110,38 @@ class AntColonyOptimization:
                     self.pheromones[edge] += pheromone_contribution
 
     def optimize(self, start_node, end_node):
-        """
-        Uruchamia optymalizację algorytmem mrówkowym.
-        """
         best_route = None
         best_score = float("inf")
+        best_distance = float("inf")  # Dodanie zmiennej na długość trasy
         iteration_scores = []
+        iteration_times = []
 
         for iteration in range(self.num_iterations):
+            start_time = time.time()
             routes = []
             for _ in range(self.num_ants):
-                route = self._build_solution(start_node, end_node)
+                route, total_distance = self._build_solution(start_node, end_node)
                 if route:
                     score = objective_function([route], self.vehicle, self.stations, self.graph, self.penalty)[1]
-                    routes.append((route, score))
+                    routes.append((route, score, total_distance))  # Uwzględnienie długości
 
             self._evaporate_pheromones()
-            self._update_pheromones(routes)
+            self._update_pheromones([(route, score) for route, score, _ in routes])
 
-            for route, score in routes:
+            for route, score, total_distance in routes:
                 if score < best_score:
                     best_route = route
                     best_score = score
+                    best_distance = total_distance  # Aktualizacja najlepszej długości
 
+            end_time = time.time()
             iteration_scores.append(best_score)
-            print(f"Iteracja {iteration + 1}/{self.num_iterations}: Najlepszy wynik = {best_score:.2f}")
+            iteration_times.append(end_time - start_time)
 
-        print(f"Optymalizacja zakończona. Najlepsza trasa: {best_route} o wyniku {best_score:.2f}.")
-        return best_route, best_score, iteration_scores
+            print(f"Iteracja {iteration + 1}/{self.num_iterations}: "
+                f"Najlepszy wynik = {best_score:.2f}, długość trasy = {best_distance:.2f} km, "
+                f"czas = {end_time - start_time:.2f} s")
+
+        print(f"Optymalizacja zakończona. Najlepsza trasa: {best_route}, długość: {best_distance:.2f} km, "
+            f"wynik: {best_score:.2f}.")
+        return best_route, best_score, iteration_scores, iteration_times, best_distance

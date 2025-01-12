@@ -7,6 +7,7 @@ from generated_graph import distances, nodes, stations
 from src.ant_colony import AntColonyOptimization
 from src.vehicle import ElectricVehicle
 from src.graph import Graph
+from src.ant_colony import AntColonyOptimization as aco
 
 def main_window():
     root = tk.Tk()
@@ -106,33 +107,43 @@ def main_window():
             ax.set_ylim([center_y - new_height / 2, center_y + new_height / 2])
             canvas.draw()
 
-    def show_iteration_plot(iteration_scores, num_iterations, best_route, best_score):
-        # Tworzymy nowe okno
+    def show_iteration_plot(iteration_scores, iteration_times, num_iterations, best_route, best_score, best_distance):
         new_window = tk.Toplevel()
         new_window.title("Optimization Progress")
-        new_window.geometry("800x600")  # Rozmiar okna
+        new_window.geometry("800x600")
 
-        # Tworzenie wykresu
-        fig, ax = plt.subplots(figsize=(8, 4))
-        ax.plot(range(1, len(iteration_scores) + 1), iteration_scores, marker='o')
-        ax.set_xlim(1, num_iterations)
-        ax.set_title("Optimization Progress")
-        ax.set_xlabel("Iteration")
-        ax.set_ylabel("Best Score")
-        ax.grid(True)
+        fig, ax = plt.subplots(2, 1, figsize=(8, 6))
 
-        # Wykres w oknie
+        # Wykres wyników
+        ax[0].plot(range(1, len(iteration_scores) + 1), iteration_scores, marker='o', label="Best Score")
+        ax[0].set_xlim(1, num_iterations)
+        ax[0].set_title("Optimization Progress (Scores)")
+        ax[0].set_xlabel("Iteration")
+        ax[0].set_ylabel("Best Score")
+        ax[0].grid(True)
+        ax[0].legend()
+
+        # Wykres czasów iteracji
+        ax[1].plot(range(1, len(iteration_times) + 1), iteration_times, marker='o', color='orange', label="Iteration Time (s)")
+        ax[1].set_xlim(1, num_iterations)
+        ax[1].set_title("Iteration Times")
+        ax[1].set_xlabel("Iteration")
+        ax[1].set_ylabel("Time (s)")
+        ax[1].grid(True)
+        ax[1].legend()
+
         canvas = FigureCanvasTkAgg(fig, master=new_window)
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         canvas.draw()
 
-        # Dodanie wyników pod wykresem
+        # Dodanie wyników
         result_frame = ttk.Frame(new_window, padding=10)
         result_frame.pack(fill=tk.BOTH, expand=True)
-
-        # Wyniki w kolorze zielonym
         ttk.Label(result_frame, text=f"Best Route: {best_route}", font=("Helvetica", 12), foreground="green").pack(anchor="w", pady=5)
         ttk.Label(result_frame, text=f"Best Score: {best_score:.2f}", font=("Helvetica", 12), foreground="green").pack(anchor="w", pady=5)
+        ttk.Label(result_frame, text=f"Total Distance: {best_distance:.2f} km", font=("Helvetica", 12), foreground="green").pack(anchor="w", pady=5)
+
+
 
     # --- Graph Generation Tab ---
     def generate_graph():
@@ -243,6 +254,7 @@ def main_window():
 
     def run_optimization():
         try:
+            # Pobieranie danych wejściowych
             energy_per_km = float(energy_consumption_entry.get())
             battery_capacity = float(battery_capacity_entry.get())
             initial_charge = float(initial_charge_entry.get())
@@ -254,15 +266,13 @@ def main_window():
             penalty = float(penalty_entry.get())
             start_node = start_node_entry.get()
             end_node = end_node_entry.get()
-          
+
             vehicle = ElectricVehicle(energy_per_km, battery_capacity, initial_charge)
 
-            # Create graph object from generated data
+            # Tworzenie grafu
             graph = Graph()
             for (node1, node2), distance in distances.items():
                 graph.add_edge(node1, node2, distance)
-
-            iteration_scores = []
 
             aco = AntColonyOptimization(
                 graph=graph,
@@ -275,14 +285,15 @@ def main_window():
                 beta=beta,
                 penalty=penalty
             )
+            best_route, best_score, iteration_scores, iteration_times, best_distance = aco.optimize(start_node, end_node)
 
-            best_route, best_score, iteration_scores = aco.optimize(start_node, end_node)
-
-            # Display results in the right panel
+            # Wyświetlanie wyników
             show_graph(current_graph, best_route, pos=current_pos)
-            show_iteration_plot(iteration_scores, num_iterations, best_route, best_score)
+            show_iteration_plot(iteration_scores, iteration_times, num_iterations, best_route, best_score, best_distance)
 
-            result_text = f"Best Route: {best_route}\nBest Score: {best_score:.2f}"
+            result_text = (f"Best Route: {best_route}\n"
+                        f"Best Score: {best_score:.2f}\n"
+                        f"Total Distance: {best_distance:.2f} km")
             for widget in graph_and_results_frame.winfo_children():
                 if isinstance(widget, ttk.Label):
                     widget.destroy()
@@ -290,6 +301,7 @@ def main_window():
 
         except Exception as e:
             ttk.Label(graph_and_results_frame, text=f"Error: {e}", font=("Helvetica", 12), foreground="red").pack(anchor="n", pady=5)
+
 
     ttk.Button(optimization_tab, text="Run Optimization", command=run_optimization).pack(fill=tk.X, pady=10)
 
