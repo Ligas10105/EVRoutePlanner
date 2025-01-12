@@ -118,7 +118,6 @@ def main_window():
         ax[0].plot(range(1, len(iteration_scores) + 1), iteration_scores, marker='o', label="Best Score")
         ax[0].set_xlim(1, num_iterations)
         ax[0].set_title("Optimization Progress (Scores)")
-        ax[0].set_xlabel("Iteration")
         ax[0].set_ylabel("Best Score")
         ax[0].grid(True)
         ax[0].legend()
@@ -127,7 +126,6 @@ def main_window():
         ax[1].plot(range(1, len(iteration_times) + 1), iteration_times, marker='o', color='orange', label="Iteration Time (s)")
         ax[1].set_xlim(1, num_iterations)
         ax[1].set_title("Iteration Times")
-        ax[1].set_xlabel("Iteration")
         ax[1].set_ylabel("Time (s)")
         ax[1].grid(True)
         ax[1].legend()
@@ -135,8 +133,7 @@ def main_window():
         # Wykres liczby unikalnych tras
         ax[2].plot(range(1, len(unique_paths_per_iteration) + 1), unique_paths_per_iteration, marker='o', color='green', label="Unique Paths")
         ax[2].set_xlim(1, num_iterations)
-        ax[2].set_title("Unique Paths per Iteration")
-        ax[2].set_xlabel("Iteration")
+        ax[2].set_title("Unique Paths")
         ax[2].set_ylabel("Unique Paths")
         ax[2].grid(True)
         ax[2].legend()
@@ -150,6 +147,10 @@ def main_window():
         ax[3].grid(True)
         ax[3].legend()
 
+        # Dostosowanie odstępów między wykresami
+        plt.subplots_adjust(hspace=0.4)  # Zwiększenie przestrzeni między wykresami (hspace)
+
+        # Rysowanie wykresów na interfejsie Tkinter
         canvas = FigureCanvasTkAgg(fig, master=new_window)
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         canvas.draw()
