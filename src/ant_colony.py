@@ -20,17 +20,16 @@ class AntColonyOptimization:
         self.graph = graph
         self.vehicle = vehicle
         self.stations = stations
-
         self.num_ants = num_ants
         self.num_iterations = num_iterations
         self.evaporation_rate = evaporation_rate
         self.alpha = alpha
         self.beta = beta
-        self.penalty = penalty
         self.pheromone_importance_probability = pheromone_importance_probability
+        self.penalty = penalty
         
         self.pheromones = {edge: 1.0 for edge in self.graph.edges}  # Inicjalizacja feromonów
-        print(f"Algorytm mrówkowy zainicjalizowany z {num_ants} mrówkami, {num_iterations} iteracjami.")
+        # print(f"Algorytm mrówkowy zainicjalizowany z {num_ants} mrówkami, {num_iterations} iteracjami.")
 
     def _select_next_node(self, current_node, visited, current_charge):
         """
@@ -112,18 +111,31 @@ class AntColonyOptimization:
     def optimize(self, start_node, end_node):
         best_route = None
         best_score = float("inf")
-        best_distance = float("inf")  # Dodanie zmiennej na długość trasy
+        best_distance = float("inf")
         iteration_scores = []
         iteration_times = []
+        unique_paths_per_iteration = []  # Lista do przechowywania unikalnych tras w każdej iteracji
+        average_scores_per_iteration = []  # Lista średnich wyników w każdej iteracji
+        score_differences = []  # Lista różnic między średnią a najlepszym wynikiem
+        unique_paths = set()  # Zestaw do przechowywania unikalnych tras w bieżącej iteracji
 
         for iteration in range(self.num_iterations):
             start_time = time.time()
             routes = []
+            total_score = 0  # Do obliczenia średniego wyniku w iteracji
+            valid_routes = 0  # Licznik tras z wynikiem większym niż 0
+
             for _ in range(self.num_ants):
                 route, total_distance = self._build_solution(start_node, end_node)
                 if route:
                     score = objective_function([route], self.vehicle, self.stations, self.graph, self.penalty)[1]
-                    routes.append((route, score, total_distance))  # Uwzględnienie długości
+                    
+                    # Tylko dodajemy trasy z wynikiem większym niż 0
+                    if score > 0:
+                        routes.append((route, score, total_distance))
+                        unique_paths.add(tuple(route))  # Dodajemy trasę jako krotkę (tupla) do zestawu
+                        total_score += score  # Sumujemy wyniki dla obliczenia średniej
+                        valid_routes += 1  # Zwiększamy licznik ważnych tras
 
             self._evaporate_pheromones()
             self._update_pheromones([(route, score) for route, score, _ in routes])
@@ -132,16 +144,32 @@ class AntColonyOptimization:
                 if score < best_score:
                     best_route = route
                     best_score = score
-                    best_distance = total_distance  # Aktualizacja najlepszej długości
+                    best_distance = total_distance
+
+            # Obliczenie średniej w tej iteracji tylko z ważnych tras
+            average_score = total_score / valid_routes if valid_routes > 0 else 100
+            
+            # Obliczenie różnicy między najlepszym wynikiem a średnim wynikiem
+            if valid_routes > 0:
+                score_difference = best_score - average_score
+            else:
+                score_difference = 0  # Jeśli brak tras z wynikiem > 0, różnica jest 0
 
             end_time = time.time()
             iteration_scores.append(best_score)
             iteration_times.append(end_time - start_time)
+            average_scores_per_iteration.append(average_score)
+            score_differences.append(score_difference)
 
-            print(f"Iteracja {iteration + 1}/{self.num_iterations}: "
-                f"Najlepszy wynik = {best_score:.2f}, długość trasy = {best_distance:.2f} km, "
-                f"czas = {end_time - start_time:.2f} s")
+            # Dodanie liczby unikalnych tras do listy
+            unique_paths_per_iteration.append(len(unique_paths))
 
-        print(f"Optymalizacja zakończona. Najlepsza trasa: {best_route}, długość: {best_distance:.2f} km, "
-            f"wynik: {best_score:.2f}.")
-        return best_route, best_score, iteration_scores, iteration_times, best_distance
+        #     print(f"Iteracja {iteration + 1}/{self.num_iterations}: "
+        #         f"Najlepszy wynik = {best_score:.2f}, średni wynik = {average_score:.2f}, "
+        #         f"różnica = {score_difference:.2f}, długość trasy = {best_distance:.2f} km, "
+        #         f"czas = {end_time - start_time:.2f} s, unikalne trasy = {len(unique_paths)}")
+
+        # print(f"Optymalizacja zakończona. Najlepsza trasa: {best_route}, długość: {best_distance:.2f} km, "
+        #     f"wynik: {best_score:.2f}.")
+
+        return best_route, best_score, iteration_scores, iteration_times, best_distance, unique_paths_per_iteration, average_scores_per_iteration, score_differences

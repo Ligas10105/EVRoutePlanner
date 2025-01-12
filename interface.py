@@ -107,12 +107,12 @@ def main_window():
             ax.set_ylim([center_y - new_height / 2, center_y + new_height / 2])
             canvas.draw()
 
-    def show_iteration_plot(iteration_scores, iteration_times, num_iterations, best_route, best_score, best_distance):
+    def show_iteration_plot(iteration_scores, iteration_times, num_iterations, best_route, best_score, best_distance, unique_paths_per_iteration, average_scores_per_iteration, score_differences):
         new_window = tk.Toplevel()
         new_window.title("Optimization Progress")
         new_window.geometry("800x600")
 
-        fig, ax = plt.subplots(2, 1, figsize=(8, 6))
+        fig, ax = plt.subplots(4, 1, figsize=(8, 10))  # Dodajemy jeden wykres więcej
 
         # Wykres wyników
         ax[0].plot(range(1, len(iteration_scores) + 1), iteration_scores, marker='o', label="Best Score")
@@ -132,6 +132,24 @@ def main_window():
         ax[1].grid(True)
         ax[1].legend()
 
+        # Wykres liczby unikalnych tras
+        ax[2].plot(range(1, len(unique_paths_per_iteration) + 1), unique_paths_per_iteration, marker='o', color='green', label="Unique Paths")
+        ax[2].set_xlim(1, num_iterations)
+        ax[2].set_title("Unique Paths per Iteration")
+        ax[2].set_xlabel("Iteration")
+        ax[2].set_ylabel("Unique Paths")
+        ax[2].grid(True)
+        ax[2].legend()
+
+        # Wykres różnicy między średnim a najlepszym wynikiem
+        ax[3].plot(range(1, len(score_differences) + 1), score_differences, marker='o', color='red', label="Score Difference (Best - Average)")
+        ax[3].set_xlim(1, num_iterations)
+        ax[3].set_title("Difference Between Best and Average Score")
+        ax[3].set_xlabel("Iteration")
+        ax[3].set_ylabel("Score Difference")
+        ax[3].grid(True)
+        ax[3].legend()
+
         canvas = FigureCanvasTkAgg(fig, master=new_window)
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         canvas.draw()
@@ -142,7 +160,6 @@ def main_window():
         ttk.Label(result_frame, text=f"Best Route: {best_route}", font=("Helvetica", 12), foreground="green").pack(anchor="w", pady=5)
         ttk.Label(result_frame, text=f"Best Score: {best_score:.2f}", font=("Helvetica", 12), foreground="green").pack(anchor="w", pady=5)
         ttk.Label(result_frame, text=f"Total Distance: {best_distance:.2f} km", font=("Helvetica", 12), foreground="green").pack(anchor="w", pady=5)
-
 
 
     # --- Graph Generation Tab ---
@@ -250,6 +267,7 @@ def main_window():
     evaporation_rate_entry = create_entry_field(optimization_tab, "Evaporation Rate:", "0.5")
     alpha_entry = create_entry_field(optimization_tab, "Pheromone Weight (Alpha):", "1")
     beta_entry = create_entry_field(optimization_tab, "Heuristic Weight (Beta):", "2")
+    pheromone_importance_probability_entry = create_entry_field(optimization_tab, "Pheromone Importance Probability:", "0.8")
     penalty_entry = create_entry_field(optimization_tab, "Penalty for Invalid Routes:", "10")
 
     def run_optimization():
@@ -263,6 +281,7 @@ def main_window():
             evaporation_rate = float(evaporation_rate_entry.get())
             alpha = float(alpha_entry.get())
             beta = float(beta_entry.get())
+            pheromone_importance_probability = float(pheromone_importance_probability_entry.get())
             penalty = float(penalty_entry.get())
             start_node = start_node_entry.get()
             end_node = end_node_entry.get()
@@ -283,13 +302,14 @@ def main_window():
                 evaporation_rate=evaporation_rate,
                 alpha=alpha,
                 beta=beta,
+                pheromone_importance_probability=pheromone_importance_probability,
                 penalty=penalty
             )
-            best_route, best_score, iteration_scores, iteration_times, best_distance = aco.optimize(start_node, end_node)
+            best_route, best_score, iteration_scores, iteration_times, best_distance, all_routes, average_scores_per_iteration, score_differences = aco.optimize(start_node, end_node)
 
             # Wyświetlanie wyników
             show_graph(current_graph, best_route, pos=current_pos)
-            show_iteration_plot(iteration_scores, iteration_times, num_iterations, best_route, best_score, best_distance)
+            show_iteration_plot(iteration_scores, iteration_times, num_iterations, best_route, best_score, best_distance, all_routes, average_scores_per_iteration, score_differences)
 
             result_text = (f"Best Route: {best_route}\n"
                         f"Best Score: {best_score:.2f}\n"
@@ -301,6 +321,7 @@ def main_window():
 
         except Exception as e:
             ttk.Label(graph_and_results_frame, text=f"Error: {e}", font=("Helvetica", 12), foreground="red").pack(anchor="n", pady=5)
+
 
 
     ttk.Button(optimization_tab, text="Run Optimization", command=run_optimization).pack(fill=tk.X, pady=10)

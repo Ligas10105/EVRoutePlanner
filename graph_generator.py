@@ -2,7 +2,7 @@ import random
 from src.graph import Graph
 from src.charging_station import ChargingStation
 
-def generate_graph(output_file="generated_graph.py", num_nodes=20, num_edges=40, num_stations=5):
+def generate_graph(output_file="generated_graph.py", num_nodes=100, num_edges=1000, num_stations=30):
     """
     Generuje graf i zapisuje go do pliku w formacie używanym w aplikacji.
 
@@ -16,17 +16,40 @@ def generate_graph(output_file="generated_graph.py", num_nodes=20, num_edges=40,
     distances = {}
     stations = {}
 
-    # Generowanie krawędzi
-    for _ in range(num_edges):
+    # Początkowe połączenia między wierzchołkami (każdy wierzchołek ma przynajmniej jedną krawędź)
+    for i in range(num_nodes):
+        start = nodes[i]
+        end = nodes[(i + 1) % num_nodes]  # Łączenie wierzchołków w cyklu
+        distance = random.randint(10, 100)
+        difficulty = round(random.uniform(1.0, 2.0), 2)
+        graph.add_edge(start, end, distance, difficulty=difficulty)
+        graph.add_edge(end, start, distance, difficulty=difficulty)
+        distances[(start, end)] = distance
+        distances[(end, start)] = distance
+
+    # Dodawanie pozostałych krawędzi
+    while len(distances) < num_edges:
         start = random.choice(nodes)
         end = random.choice(nodes)
         if start != end and (start, end) not in distances:
-            distance = random.randint(10, 100)  # Odległość w km
-            difficulty = round(random.uniform(1.0, 2.0), 2)  # Trudność trasy
+            distance = random.randint(10, 100)
+            difficulty = round(random.uniform(1.0, 2.0), 2)
             graph.add_edge(start, end, distance, difficulty=difficulty)
             graph.add_edge(end, start, distance, difficulty=difficulty)
             distances[(start, end)] = distance
             distances[(end, start)] = distance
+
+    # Upewnij się, że każdy węzeł ma co najmniej jedną krawędź
+    for node in nodes:
+        if node not in graph.edges or not graph.edges[node]:
+            # Węzeł nie ma żadnych połączeń, wybierz losowy węzeł do połączenia
+            potential_target = random.choice([n for n in nodes if n != node])
+            distance = random.randint(10, 100)
+            difficulty = round(random.uniform(1.0, 2.0), 2)
+            graph.add_edge(node, potential_target, distance, difficulty=difficulty)
+            graph.add_edge(potential_target, node, distance, difficulty=difficulty)
+            distances[(node, potential_target)] = distance
+            distances[(potential_target, node)] = distance
 
     # Generowanie stacji ładowania
     for _ in range(num_stations):
